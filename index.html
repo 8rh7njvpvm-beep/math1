@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哆啦A夢：代數大作戰 (選項置頂版)</title>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --blue: #0096e1;
+            --red: #ef233c;
+            --white: #ffffff;
+            --yellow: #fdd835;
+            --text: #333;
+        }
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #c4e9f2;
+            background-image: radial-gradient(var(--blue) 2px, transparent 2px);
+            background-size: 30px 30px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 90%;
+            max-width: 650px;
+            background: var(--white);
+            border-radius: 30px;
+            border: 8px solid var(--blue);
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 哆啦A夢裝飾 (右上) */
+        .dora-decoration {
+            position: absolute;
+            top: -90px;
+            right: -40px;
+            width: 140px;
+            height: 140px;
+            transform: rotate(5deg);
+            z-index: 5;
+        }
+
+        /* 抬頭顯示器 */
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f0f8ff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 2px solid var(--blue);
+        }
+
+        .score-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            color: var(--text);
+            font-weight: bold;
+        }
+
+        .dorayaki-icon {
+            width: 40px;
+            height: 40px;
+            filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));
+        }
+
+        /* --- 選項區 (置頂) --- */
+        .options-panel {
+            background: #fff;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .options-label {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-align: left;
+            display: block;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3列顯示 */
+            gap: 15px;
+        }
+
+        .btn-option {
+            background: var(--white);
+            border: 3px solid var(--red);
+            color: var(--red);
+            font-size: 1.5rem;
+            padding: 15px 0;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-weight: bold;
+            box-shadow: 0 4px 0 rgba(239, 35, 60, 0.2);
+        }
+
+        .btn-option:hover {
+            background: var(--red);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(239, 35, 60, 0.3);
+        }
+
+        .btn-option:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        /* --- 題目區 (下方) --- */
+        .question-area {
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .question-box {
+            font-size: 3rem;
+            color: var(--blue);
+            font-weight: 800;
+            padding: 40px 20px;
+            background: #eef9fd;
+            border-radius: 20px;
+            border: 4px dashed var(--blue);
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 大雄回饋圖片 (左下角) */
+        .nobita-feedback {
+            position: absolute;
+            bottom: -10px;
+            left: -10px;
+            width: 90px;
+            height: 90px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 6;
+            filter: drop-shadow(2px 2px 0 #fff);
+        }
+
+        /* 遮罩層 */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.98);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .btn-start {
+            background: var(--blue);
+            color: var(--white);
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #006da3;
+            font-family: inherit;
+            margin-top: 20px;
+        }
+        .btn-start:active { transform: translateY(5px); box-shadow: none; }
+
+        /* 回饋動畫 */
+        .feedback-anim {
+            position: absolute;
+            top: 60%; /* 調整位置到題目區附近 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .feedback-dorayaki {
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(2px 2px 5px rgba(0,0,0,0.3));
+        }
+
+        /* 錯題訂正區 */
+        #review-screen {
+            justify-content: flex-start;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .review-card {
+            background: #fff;
+            border: 2px solid var(--text);
+            border-radius: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 15px;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        .balance-step {
+            color: #555;
+            font-size: 0.9rem;
+            margin: 5px 0;
+            padding-left: 10px;
+            border-left: 3px solid var(--blue);
+        }
+
+        .correct-eq { color: var(--blue); font-weight: bold; }
+        .wrong-ans { color: var(--red); text-decoration: line-through; }
+
+        #mute-btn {
+            position: absolute; top: 10px; left: 10px;
+            background: #ddd; border: none; padding: 5px 10px; border-radius: 10px; cursor: pointer; z-index: 30;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <svg style="display: none;">
+            <symbol id="icon-dorayaki" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="#d2691e" stroke="#8b4513" stroke-width="2"/>
+                <ellipse cx="50" cy="50" rx="35" ry="35" fill="#e6b8a2"/>
+                <path d="M 20 50 H 80" stroke="#8b4513" stroke-width="3" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-doraemon" viewBox="0 0 200 200">
+                <g>
+                    <ellipse cx="100" cy="105" rx="85" ry="82" fill="#007ebf"/>
+                    <ellipse cx="100" cy="100" rx="85" ry="82" fill="#0096e1"/>
+                    <path d="M 100 175 C 60 175, 30 145, 30 110 C 30 75, 60 45, 100 45 C 140 45, 170 75, 170 110 C 170 145, 140 175, 100 175 Z" fill="#ffffff"/>
+                    <g stroke="#333" stroke-width="2" fill="#ffffff">
+                        <ellipse cx="72" cy="65" rx="22" ry="25"/>
+                        <ellipse cx="128" cy="65" rx="22" ry="25"/>
+                    </g>
+                    <g fill="#333">
+                        <circle cx="82" cy="65" r="5"/>
+                        <circle cx="118" cy="65" r="5"/>
+                    </g>
+                    <g fill="#ffffff" opacity="0.8">
+                        <ellipse cx="78" cy="61" rx="3" ry="4"/>
+                        <ellipse cx="114" cy="61" rx="3" ry="4"/>
+                    </g>
+                    <circle cx="100" cy="85" r="12" fill="#ef233c" stroke="#333" stroke-width="2"/>
+                    <ellipse cx="96" cy="81" rx="4" ry="3" fill="#ffffff" opacity="0.8"/>
+                    <g stroke="#333" stroke-width="2" fill="none">
+                        <path d="M 35 85 L 80 95"/><path d="M 30 105 L 80 105"/><path d="M 35 125 L 80 115"/>
+                        <path d="M 165 85 L 120 95"/><path d="M 170 105 L 120 105"/><path d="M 165 125 L 120 115"/>
+                    </g>
+                    <line x1="100" y1="97" x2="100" y2="155" stroke="#333" stroke-width="2"/>
+                    <path d="M 50 125 Q 100 170 150 125" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                    <path d="M 40 160 Q 100 190 160 160 L 160 175 Q 100 205 40 175 Z" fill="#d9230f" stroke="#333" stroke-width="2"/>
+                    <g transform="translate(100, 185)">
+                        <circle r="15" fill="#fdd835" stroke="#333" stroke-width="2"/>
+                        <path d="M -14 0 H 14" stroke="#333" stroke-width="2"/>
+                        <circle cy="5" r="4" fill="#333"/>
+                        <path d="M 0 9 L 0 14" stroke="#333" stroke-width="2"/>
+                        <circle cx="-5" cy="-5" r="3" fill="#ffffff" opacity="0.6"/>
+                    </g>
+                </g>
+            </symbol>
+            <symbol id="icon-nobita-happy" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="#ffdfc4" stroke="#333" stroke-width="2"/>
+                <g stroke="#333" stroke-width="3" fill="none">
+                    <circle cx="35" cy="45" r="15"/><circle cx="65" cy="45" r="15"/><line x1="50" y1="45" x2="50" y2="45"/>
+                </g>
+                <path d="M 30 70 Q 50 90 70 70" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </symbol>
+             <symbol id="icon-nobita-sad" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="#ffdfc4" stroke="#333" stroke-width="2"/>
+                <g stroke="#333" stroke-width="3" fill="none">
+                    <circle cx="35" cy="45" r="15"/><circle cx="65" cy="45" r="15"/>
+                </g>
+                 <path d="M 30 80 Q 50 60 70 80" stroke="#333" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <path d="M 35 55 Q 30 70 25 85" stroke="#0096e1" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>
+                <path d="M 65 55 Q 70 70 75 85" stroke="#0096e1" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.7"/>
+            </symbol>
+        </svg>
+
+        <svg class="dora-decoration"><use href="#icon-doraemon"/></svg>
+        <button id="mute-btn" onclick="toggleMute()">🔊</button>
+        
+        <h1 style="color:var(--blue); margin: 0 0 10px 0; font-size: 1.8rem;">代數大作戰</h1>
+        
+        <div class="hud">
+            <div class="score-box">
+                <svg class="dorayaki-icon"><use href="#icon-dorayaki"/></svg>
+                <span>x <span id="score">0</span></span>
+            </div>
+            <div style="font-weight:bold; color:var(--blue);">
+                進度: <span id="current-q">1</span>/8
+            </div>
+        </div>
+
+        <div class="options-panel">
+            <span class="options-label">👇 選擇正確的 x 值：</span>
+            <div class="options-grid" id="options-container">
+                </div>
+        </div>
+
+        <div class="question-area">
+            <div class="question-box" id="question-display">
+                ???
+            </div>
+            <svg id="nobita-happy" class="nobita-feedback"><use href="#icon-nobita-happy"/></svg>
+            <svg id="nobita-sad" class="nobita-feedback"><use href="#icon-nobita-sad"/></svg>
+        </div>
+
+        <div id="feedback" class="feedback-anim"></div>
+
+        <div id="start-screen" class="overlay">
+            <svg class="dorayaki-icon" style="width:80px; height:80px; margin-bottom:20px;"><use href="#icon-dorayaki"/></svg>
+            <h1 style="color:var(--blue); margin: 0;">哆啦A夢：代數大作戰</h1>
+            <p>幫大雄解開 8 道方程式！<br>答對 5 題就能獲得銅鑼燒！</p>
+            <button class="btn-start" onclick="startGame()">拿出道具 (開始)</button>
+        </div>
+
+        <div id="review-screen" class="overlay" style="display: none;">
+            <svg class="dorayaki-icon" style="width:100px; height:100px; margin:20px 0;"><use href="#icon-dorayaki"/></svg>
+            <h2 id="result-title">任務完成！</h2>
+            <p id="result-msg" style="font-size: 1.2rem; font-weight: bold;">你獲得了 5 個銅鑼燒！</p>
+            <div id="review-list" style="width:100%; margin-top:10px;"></div>
+            <button class="btn-start" onclick="location.reload()" style="margin: 20px 0;">再來一次</button>
+        </div>
+    </div>
+
+    <script>
+        // 音效與邏輯與之前完全相同
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isMuted = false;
+        let bgmInterval;
+        let bgmNote = 0;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playBGM();
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('mute-btn').innerText = isMuted ? "🔇" : "🔊";
+            if(isMuted && audioCtx) audioCtx.suspend();
+            else if(audioCtx) audioCtx.resume();
+        }
+
+        function playTone(freq, type, duration, startTime=0, vol=0.1) {
+            if (!audioCtx || isMuted) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime + startTime);
+            gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + startTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(audioCtx.currentTime + startTime);
+            osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+
+        function playBGM() {
+            if(bgmInterval) clearInterval(bgmInterval);
+            const melody = [
+                392, 440, 493, 392, 329, 0,
+                523, 493, 440, 392, 440, 0,
+                392, 440, 493, 392, 329, 0,
+                293, 329, 369, 392, 0, 0
+            ];
+            bgmNote = 0;
+            bgmInterval = setInterval(() => {
+                if(!isMuted) {
+                    let freq = melody[bgmNote];
+                    if(freq > 0) playTone(freq, 'sine', 0.25, 0, 0.05);
+                }
+                bgmNote = (bgmNote + 1) % melody.length;
+            }, 300);
+        }
+
+        function playApplause() {
+            if (!audioCtx || isMuted) return;
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.5));
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.value = 1000;
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.5;
+            
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+            playTone(880, 'triangle', 0.1, 0, 0.2);
+            playTone(1100, 'triangle', 0.4, 0.1, 0.2);
+        }
+
+        function playWrong() {
+            playTone(150, 'sawtooth', 0.3, 0, 0.2);
+            playTone(100, 'sawtooth', 0.3, 0.1, 0.2);
+        }
+
+        // --- 數學邏輯系統 ---
+        let questionPool = [];
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let wrongAnswers = [];
+
+        function generatePool() {
+            questionPool = [];
+            for (let i = 0; i < 100; i++) {
+                let type = Math.floor(Math.random() * 3); 
+                let q = {};
+                let x = Math.floor(Math.random() * 9) + 2; 
+
+                if (type === 0) { 
+                    let isPlus = Math.random() > 0.5;
+                    let a = Math.floor(Math.random() * 10) + 1;
+                    if (isPlus) {
+                        let b = x + a;
+                        q.str = `x + ${a} = ${b}`;
+                        q.steps = [`目標讓 x 單獨在左邊`, `天平兩邊同時減 ${a}`, `x = ${b} - ${a}`, `x = ${x}`];
+                    } else {
+                        let b = Math.floor(Math.random() * 9) + 1; 
+                        let a_sub = Math.floor(Math.random() * 9) + 1;
+                        x = b + a_sub;
+                        q.str = `x - ${a_sub} = ${b}`;
+                        q.steps = [`目標讓 x 單獨在左邊`, `天平兩邊同時加 ${a_sub}`, `x = ${b} + ${a_sub}`, `x = ${x}`];
+                    }
+                    q.ans = x;
+                } 
+                else if (type === 1) { 
+                    let a = Math.floor(Math.random() * 9) + 2;
+                    let b = a * x;
+                    q.str = `${a}x = ${b}`;
+                    q.ans = x;
+                    q.steps = [`${a}x 代表 ${a} 乘 x`, `天平兩邊同時除以 ${a}`, `x = ${b} ÷ ${a}`, `x = ${x}`];
+                } 
+                else { 
+                    let a = Math.floor(Math.random() * 4) + 2;
+                    let term = a * x;
+                    let isPlus = Math.random() > 0.5;
+                    if (isPlus) {
+                        let b = Math.floor(Math.random() * 10) + 1;
+                        let c = term + b;
+                        q.str = `${a}x + ${b} = ${c}`;
+                        q.steps = [`步驟 1：兩邊同時減 ${b}`, `${a}x = ${c} - ${b} ➔ ${a}x = ${c-b}`, `步驟 2：兩邊同時除以 ${a}`, `x = ${x}`];
+                    } else {
+                        let maxB = term - 1;
+                        if (maxB < 1) maxB = 1;
+                        let b = Math.floor(Math.random() * maxB) + 1;
+                        let c = term - b;
+                        q.str = `${a}x - ${b} = ${c}`;
+                        q.steps = [`步驟 1：兩邊同時加 ${b}`, `${a}x = ${c} + ${b} ➔ ${a}x = ${c+b}`, `步驟 2：兩邊同時除以 ${a}`, `x = ${x}`];
+                    }
+                    q.ans = x;
+                }
+                questionPool.push(q);
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            generatePool();
+            currentQuestions = questionPool.sort(() => 0.5 - Math.random()).slice(0, 8);
+            currentIndex = 0;
+            score = 0;
+            wrongAnswers = [];
+            
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('review-screen').style.display = 'none';
+            updateHUD();
+            showQuestion();
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('current-q').innerText = currentIndex + 1;
+        }
+
+        function showQuestion() {
+            if (currentIndex >= 8) {
+                endGame();
+                return;
+            }
+
+            let q = currentQuestions[currentIndex];
+            document.getElementById('question-display').innerText = q.str;
+            
+            let opts = [q.ans];
+            while (opts.length < 3) {
+                let fake = q.ans + (Math.floor(Math.random() * 5) - 2) * (Math.random()>0.5 ? 1 : -1);
+                if (fake === q.ans) fake = q.ans + 1; 
+                if (fake <= 0) fake = 1;
+                if (!opts.includes(fake)) opts.push(fake);
+            }
+            opts.sort(() => Math.random() - 0.5);
+
+            const container = document.getElementById('options-container');
+            container.innerHTML = "";
+            opts.forEach(opt => {
+                let btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = `x = ${opt}`;
+                btn.onclick = () => checkAnswer(opt, q);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(val, qObj) {
+            let feedback = document.getElementById('feedback');
+            let nobitaHappy = document.getElementById('nobita-happy');
+            let nobitaSad = document.getElementById('nobita-sad');
+            
+            if (val === qObj.ans) {
+                score++;
+                playApplause();
+                feedback.innerHTML = '<svg class="feedback-dorayaki"><use href="#icon-dorayaki"/></svg> +1';
+                feedback.style.color = "#d2691e";
+                feedback.style.textShadow = "2px 2px #fff";
+                nobitaHappy.style.opacity = 1;
+            } else {
+                playWrong();
+                feedback.innerText = "😭";
+                wrongAnswers.push({
+                    q: qObj,
+                    userAns: val
+                });
+                nobitaSad.style.opacity = 1;
+            }
+
+            feedback.style.opacity = 1;
+            updateHUD();
+
+            let btns = document.querySelectorAll('.btn-option');
+            btns.forEach(b => b.disabled = true);
+
+            setTimeout(() => {
+                feedback.style.opacity = 0;
+                nobitaHappy.style.opacity = 0;
+                nobitaSad.style.opacity = 0;
+                currentIndex++;
+                updateHUD();
+                showQuestion();
+            }, 1500);
+        }
+
+        function endGame() {
+            clearInterval(bgmInterval);
+            let reviewScreen = document.getElementById('review-screen');
+            let title = document.getElementById('result-title');
+            let msg = document.getElementById('result-msg');
+            let list = document.getElementById('review-list');
+            
+            reviewScreen.style.display = 'flex';
+            list.innerHTML = "";
+
+            if (score >= 5) {
+                title.innerText = "任務成功！";
+                title.style.color = "var(--blue)";
+                playApplause();
+            } else {
+                title.innerText = "再接再厲...";
+                title.style.color = "var(--red)";
+            }
+            
+            msg.innerHTML = `你獲得了 <span style="color:#d2691e; font-size:1.5rem;">${score}</span> 個銅鑼燒！<br>(目標: 5個)`;
+
+            if (wrongAnswers.length > 0) {
+                let h3 = document.createElement('h3');
+                h3.innerText = "錯題訂正 (天平法教學)：";
+                h3.style.color = "#555";
+                list.appendChild(h3);
+
+                wrongAnswers.forEach(item => {
+                    let card = document.createElement('div');
+                    card.className = 'review-card';
+                    
+                    let html = `
+                        <div style="font-size:1.2rem; margin-bottom:5px;">
+                            題目：<span class="correct-eq">${item.q.str}</span>
+                        </div>
+                        <div style="margin-bottom:10px;">
+                            你的答案：<span class="wrong-ans">x = ${item.userAns}</span> 
+                            <span style="color:green; font-weight:bold;"> 正解：x = ${item.q.ans}</span>
+                        </div>
+                        <div style="background:#f9f9f9; padding:10px; border-radius:5px;">
+                            <strong>💡 解題步驟：</strong>
+                    `;
+                    
+                    item.q.steps.forEach(step => {
+                        html += `<div class="balance-step">${step}</div>`;
+                    });
+                    
+                    html += `</div>`;
+                    card.innerHTML = html;
+                    list.appendChild(card);
+                });
+            } else {
+                list.innerHTML = "<h3 style='color:green;'>全對！太厲害了！是大雄的榜樣！</h3>";
+            }
+        }
+    </script>
+</body>
+</html>
